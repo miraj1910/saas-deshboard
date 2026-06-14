@@ -18,7 +18,6 @@ function extractSlug(pathname: string): string | null {
 }
 
 export const config = {
-  secret: process.env.AUTH_SECRET,
   trustHost: true,
   pages: {
     signIn: '/login',

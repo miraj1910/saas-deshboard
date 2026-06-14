@@ -1,9 +1,9 @@
 import NextAuth from 'next-auth'
-import { config } from '@/lib/auth.config'
+import { config as authConfig } from '@/lib/auth.config'
 import { checkRateLimit } from '@/lib/rate-limiter'
 import { NextResponse } from 'next/server'
 
-const { auth } = NextAuth(config)
+const { auth } = NextAuth(authConfig)
 
 const LOOP_PROTECTION_COOKIE = 'x-mw-loop-protection'
 
@@ -29,11 +29,18 @@ function extractSlug(pathname: string): string | null {
   const match = pathname.match(/^\/([^/]+)(?:\/|$)/)
   if (!match) return null
   const slug = match[1]
-  // Skip known non-workspace routes
   if (NON_WORKSPACE_ROUTES.has(slug)) return null
-  // Skip if it looks like a Next.js internal path or has a dot (file extension)
   if (slug.startsWith('_') || slug.includes('.')) return null
   return slug
+}
+
+const PUBLIC_PATHS = [
+  '/', '/pricing', '/login', '/register', '/signup',
+  '/forgot-password', '/reset-password', '/invite', '/api/auth',
+]
+
+function isPublic(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
 export default auth((req) => {
@@ -154,13 +161,4 @@ export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
-}
-
-function isPublic(pathname: string): boolean {
-  const pages = config.pages as { signIn?: string } | undefined
-  const publicPaths = [
-    '/', '/pricing', '/login', '/register', '/signup',
-    '/forgot-password', '/reset-password', '/invite', '/api/auth',
-  ]
-  return publicPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
