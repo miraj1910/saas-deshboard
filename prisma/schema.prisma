@@ -1,0 +1,712 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ──────────────────────────────────────────────
+// Enums
+// ──────────────────────────────────────────────
+
+enum UserType {
+  TEAM
+  CLIENT
+}
+
+enum WorkspaceRole {
+  OWNER
+  MANAGER
+  TEAM_MEMBER
+}
+
+enum Plan {
+  FREE
+  PRO
+  AGENCY
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum ClientStatus {
+  LEAD
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+enum TimeEntryStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELED
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  PROJECT_COMPLETED
+  INVOICE_PAID
+  TIME_ENTRY_APPROVED
+  CLIENT_CREATED
+}
+
+enum RequestStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+// ──────────────────────────────────────────────
+// Workspace (multi-tenant container)
+// ──────────────────────────────────────────────
+
+model Workspace {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  deletedAt DateTime?
+
+  settings      WorkspaceSettings?
+  subscriptions Subscription[]
+  members       WorkspaceMember[]
+  clients       Client[]
+  clientMembers ClientMember[]
+  projects      Project[]
+  timeEntries   TimeEntry[]
+  invoices      Invoice[]
+  invites       Invite[]
+  auditLogs     AuditLog[]
+  activities    Activity[]
+  apiKeys         ApiKey[]
+  notifications   Notification[]
+  clientRequests  ClientRequest[]
+  files           FileAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([deletedAt])
+  @@map("workspaces")
+}
+
+// ──────────────────────────────────────────────
+// WorkspaceSettings (1:1 configuration)
+// ──────────────────────────────────────────────
+
+model WorkspaceSettings {
+  id             String  @id @default(uuid())
+  workspaceId    String  @unique
+  logoUrl        String?
+  primaryColor   String?
+  timezone       String  @default("UTC")
+  companyName    String?
+  companyAddress String?
+  companyTaxId   String?
+  theme          Json?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("workspace_settings")
+}
+
+// ──────────────────────────────────────────────
+// Subscription (billing record)
+// ──────────────────────────────────────────────
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  workspaceId          String
+  stripeSubscriptionId String?
+  stripeCustomerId     String?
+  plan                 Plan
+  status               SubscriptionStatus
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  trialEndsAt          DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([workspaceId, currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+// ──────────────────────────────────────────────
+// User (unified identity)
+// ──────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  passwordHash   String
+  name           String
+  avatarUrl      String?
+  userType       UserType  @default(TEAM)
+  emailVerified  DateTime?
+  deletedAt      DateTime?
+
+  workspaceMembers WorkspaceMember[]
+  clientMembers    ClientMember[]
+  assignedTasks    Task[]            @relation("TaskAssignee")
+  timeEntries      TimeEntry[]
+  approvedEntries  TimeEntry[]       @relation("TimeEntryApprover")
+  invitedMembers   WorkspaceMember[] @relation("MemberInviter")
+  createdInvites   Invite[]          @relation("InviteCreator")
+  invitedClients   ClientMember[]    @relation("ClientMemberInviter")
+  accounts         Account[]
+  sessions         Session[]
+  auditLogs        AuditLog[]
+  activities       Activity[]
+  apiKeys          ApiKey[]
+  uploadedFiles    FileAttachment[]
+  notifications    Notification[]
+  actedNotifications Notification[] @relation("NotificationActor")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+// ──────────────────────────────────────────────
+// Account (OAuth provider link)
+// ──────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+// ──────────────────────────────────────────────
+// Session (database session)
+// ──────────────────────────────────────────────
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ──────────────────────────────────────────────
+// VerificationToken (email verification)
+// ──────────────────────────────────────────────
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ──────────────────────────────────────────────
+// WorkspaceMember (team user membership)
+// ──────────────────────────────────────────────
+
+model WorkspaceMember {
+  id          String        @id @default(uuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceRole
+  joinedAt    DateTime      @default(now())
+  invitedById String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invitedBy User?     @relation("MemberInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([role])
+  @@map("workspace_members")
+}
+
+// ──────────────────────────────────────────────
+// Client (CRM record)
+// ──────────────────────────────────────────────
+
+model Client {
+  id          String       @id @default(uuid())
+  workspaceId String
+  name        String
+  email       String?
+  phone       String?
+  company     String?
+  status      ClientStatus @default(LEAD)
+  notes       String?
+  deletedAt   DateTime?
+
+  workspace Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  members   ClientMember[]
+  projects  Project[]
+  invoices  Invoice[]
+  invites        Invite[]
+  clientRequests ClientRequest[]
+  deliverables   FileAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, createdAt])
+  @@index([deletedAt])
+  @@map("clients")
+}
+
+// ──────────────────────────────────────────────
+// ClientRequest (client-submitted ticket)
+// ──────────────────────────────────────────────
+
+model ClientRequest {
+  id          String        @id @default(uuid())
+  workspaceId String
+  clientId    String
+  title       String
+  description String?
+  status      RequestStatus @default(OPEN)
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId, clientId])
+  @@index([workspaceId, clientId, status])
+  @@map("client_requests")
+}
+
+// ──────────────────────────────────────────────
+// ClientMember (portal user link)
+// ──────────────────────────────────────────────
+
+model ClientMember {
+  id          String   @id @default(uuid())
+  clientId    String
+  userId      String
+  workspaceId String
+  joinedAt    DateTime @default(now())
+  invitedById String?
+
+  client    Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User?     @relation("ClientMemberInviter", fields: [invitedById], references: [id], onDelete: SetNull)
+
+  @@unique([clientId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([workspaceId, userId])
+  @@map("client_members")
+}
+
+// ──────────────────────────────────────────────
+// Project
+// ──────────────────────────────────────────────
+
+model Project {
+  id          String        @id @default(uuid())
+  workspaceId String
+  clientId    String
+  name        String
+  description String?
+  hourlyRate  Decimal       @default(0) @db.Decimal(10, 2)
+  status      ProjectStatus @default(ACTIVE)
+  startDate   DateTime?     @db.Date
+  dueDate     DateTime?     @db.Date
+  deletedAt   DateTime?
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client      Client      @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  tasks       Task[]
+  timeEntries TimeEntry[]
+  files       FileAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([workspaceId, clientId])
+  @@index([workspaceId, status])
+  @@index([deletedAt])
+  @@map("projects")
+}
+
+// ──────────────────────────────────────────────
+// Task
+// ──────────────────────────────────────────────
+
+model Task {
+  id          String     @id @default(uuid())
+  projectId   String
+  assigneeId  String?
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  dueDate     DateTime?  @db.Date
+  sortOrder   Float      @default(0)
+  deletedAt   DateTime?
+
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    User?       @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  timeEntries TimeEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([assigneeId])
+  @@index([projectId, sortOrder])
+  @@index([deletedAt])
+  @@map("tasks")
+}
+
+// ──────────────────────────────────────────────
+// FileAttachment (project attachments & client deliverables)
+// ──────────────────────────────────────────────
+
+model FileAttachment {
+  id           String   @id @default(uuid())
+  workspaceId  String
+  projectId    String?
+  clientId     String?
+  uploadedById String?
+  name         String   @db.VarChar(512)
+  originalName String   @db.VarChar(512)
+  size         Int
+  type         String   @db.VarChar(128)
+  key          String   @db.VarChar(1024)
+  url          String   @db.VarChar(2048)
+
+  workspace  Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project    Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  client     Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  uploadedBy User?     @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([projectId])
+  @@index([clientId])
+  @@index([uploadedById])
+  @@map("file_attachments")
+}
+
+// ──────────────────────────────────────────────
+// TimeEntry
+// ──────────────────────────────────────────────
+
+model TimeEntry {
+  id              String          @id @default(uuid())
+  workspaceId     String
+  userId          String
+  projectId       String
+  taskId          String?
+  description     String?
+  startTime       DateTime
+  endTime         DateTime?
+  durationMinutes Int
+  status          TimeEntryStatus @default(DRAFT)
+  approvedById    String?
+  approvedAt      DateTime?
+  deletedAt       DateTime?
+
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project      Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  task         Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  approvedBy   User?             @relation("TimeEntryApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  invoiceItems InvoiceLineItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([workspaceId, userId])
+  @@index([workspaceId, projectId])
+  @@index([workspaceId, startTime, endTime])
+  @@index([workspaceId, status])
+  @@index([userId, startTime])
+  @@index([deletedAt])
+  @@map("time_entries")
+}
+
+// ──────────────────────────────────────────────
+// Invoice
+// ──────────────────────────────────────────────
+
+model Invoice {
+  id            String        @id @default(uuid())
+  workspaceId   String
+  clientId      String
+  invoiceNumber String
+  status        InvoiceStatus @default(DRAFT)
+  totalAmount   Decimal       @default(0) @db.Decimal(12, 2)
+  issuedDate    DateTime      @db.Date
+  dueDate       DateTime      @db.Date
+  paidAt        DateTime?
+  notes         String?
+  deletedAt     DateTime?
+
+  workspace Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  client    Client            @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  lineItems InvoiceLineItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([workspaceId, invoiceNumber])
+  @@index([workspaceId])
+  @@index([workspaceId, clientId])
+  @@index([workspaceId, status])
+  @@index([workspaceId, dueDate])
+  @@index([deletedAt])
+  @@map("invoices")
+}
+
+// ──────────────────────────────────────────────
+// InvoiceLineItem
+// ──────────────────────────────────────────────
+
+model InvoiceLineItem {
+  id          String  @id @default(uuid())
+  invoiceId   String
+  timeEntryId String?
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  amount      Decimal @db.Decimal(12, 2)
+  sortOrder   Int     @default(0)
+
+  invoice   Invoice    @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  timeEntry TimeEntry? @relation(fields: [timeEntryId], references: [id], onDelete: SetNull)
+
+  @@index([invoiceId])
+  @@index([timeEntryId])
+  @@map("invoice_line_items")
+}
+
+// ──────────────────────────────────────────────
+// Invite
+// ──────────────────────────────────────────────
+
+model Invite {
+  id          String        @id @default(uuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole
+  token       String        @unique
+  status      InviteStatus  @default(PENDING)
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdById String?
+  clientId    String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User?     @relation("InviteCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([token])
+  @@index([email])
+  @@index([status])
+  @@index([workspaceId, status])
+  @@map("invites")
+}
+
+// ──────────────────────────────────────────────
+// Notification (in-app alert)
+// ──────────────────────────────────────────────
+
+model Notification {
+  id          String           @id @default(uuid())
+  workspaceId String
+  userId      String
+  type        NotificationType
+  title       String
+  message     String?
+  link        String?
+  readAt      DateTime?
+  actorId     String?
+  metadata    Json?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor     User?     @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId, userId, readAt])
+  @@index([workspaceId, userId, createdAt])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// ──────────────────────────────────────────────
+// AuditLog (compliance trail)
+// ──────────────────────────────────────────────
+
+model AuditLog {
+  id          String  @id @default(uuid())
+  workspaceId String
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  ipAddress   String?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, entityType, entityId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+// ──────────────────────────────────────────────
+// Activity (in-app feed)
+// ──────────────────────────────────────────────
+
+model Activity {
+  id          String  @id @default(uuid())
+  workspaceId String
+  userId      String?
+  action      String
+  description String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([workspaceId, createdAt])
+  @@index([workspaceId, entityType])
+  @@map("activities")
+}
+
+// ──────────────────────────────────────────────
+// ApiKey (external integrations)
+// ──────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(uuid())
+  workspaceId String
+  userId      String
+  name        String
+  keyHash     String    @unique
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([keyHash])
+  @@map("api_keys")
+}
+
+// ──────────────────────────────────────────────
+// PasswordResetToken
+// ──────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+  @@map("password_reset_tokens")
+}

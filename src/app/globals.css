@@ -1,0 +1,260 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+@plugin "tailwindcss-animate";
+
+@layer base {
+  :root {
+    /* ── Deep Slate Surface System ── */
+    --background: 210 20% 98%;
+    --foreground: 210 20% 6%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 20% 6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 20% 6%;
+    --primary: 175 84% 32%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 15% 94%;
+    --secondary-foreground: 210 20% 12%;
+    --muted: 210 15% 94%;
+    --muted-foreground: 210 10% 46%;
+    --accent: 175 84% 32%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 15% 90%;
+    --input: 210 15% 90%;
+    --ring: 175 84% 32%;
+    --radius: 0.625rem;
+
+    /* ── Surface Hierarchy ── */
+    --surface-0: 210 20% 98%;
+    --surface-1: 0 0% 100%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 210 15% 96%;
+    --surface-4: 210 15% 92%;
+
+    /* ── Sidebar ── */
+    --sidebar: 210 20% 99%;
+    --sidebar-foreground: 210 20% 12%;
+    --sidebar-muted: 210 10% 46%;
+    --sidebar-accent: 175 84% 32%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 210 15% 90%;
+
+    /* ── Accent Gradient (Teal → Ocean → Indigo) ── */
+    --accent-gradient-from: 175 84% 32%;
+    --accent-gradient-via: 217 91% 60%;
+    --accent-gradient-to: 239 84% 67%;
+
+    /* ── Chart Colors ── */
+    --chart-1: 175 84% 32%;
+    --chart-2: 217 91% 60%;
+    --chart-3: 239 84% 67%;
+    --chart-4: 25 95% 53%;
+    --chart-5: 0 72% 51%;
+
+    /* ── Shadows ── */
+    --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    --shadow-card-hover: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+    --shadow-elevated: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.08);
+    --shadow-modal: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+    --shadow-button: 0 1px 3px 0 rgb(0 0 0 / 0.08);
+    --shadow-button-hover: 0 4px 8px 0 rgb(0 0 0 / 0.12);
+    --shadow-glow: 0 0 20px -4px hsl(175 84% 32% / 0.25);
+  }
+
+  .dark {
+    /* ── Deep Slate Surface System ── */
+    --background: 210 20% 4%;
+    --foreground: 210 15% 90%;
+    --card: 210 20% 6%;
+    --card-foreground: 210 15% 90%;
+    --popover: 210 20% 6%;
+    --popover-foreground: 210 15% 90%;
+    --primary: 175 84% 38%;
+    --primary-foreground: 210 20% 4%;
+    --secondary: 210 20% 10%;
+    --secondary-foreground: 210 15% 80%;
+    --muted: 210 20% 10%;
+    --muted-foreground: 210 10% 50%;
+    --accent: 175 84% 38%;
+    --accent-foreground: 210 20% 4%;
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 15% 16%;
+    --input: 210 15% 16%;
+    --ring: 175 84% 38%;
+
+    /* ── Surface Hierarchy ── */
+    --surface-0: 210 20% 4%;
+    --surface-1: 210 20% 6%;
+    --surface-2: 210 20% 8%;
+    --surface-3: 210 20% 10%;
+    --surface-4: 210 20% 14%;
+
+    /* ── Sidebar ── */
+    --sidebar: 210 20% 5%;
+    --sidebar-foreground: 210 15% 80%;
+    --sidebar-muted: 210 10% 45%;
+    --sidebar-accent: 175 84% 38%;
+    --sidebar-accent-foreground: 210 20% 4%;
+    --sidebar-border: 210 15% 14%;
+
+    /* ── Accent Gradient (Teal → Ocean → Indigo) ── */
+    --accent-gradient-from: 175 84% 38%;
+    --accent-gradient-via: 217 91% 65%;
+    --accent-gradient-to: 239 84% 72%;
+
+    /* ── Chart Colors ── */
+    --chart-1: 175 84% 42%;
+    --chart-2: 217 91% 65%;
+    --chart-3: 239 84% 72%;
+    --chart-4: 25 95% 58%;
+    --chart-5: 0 72% 50%;
+
+    /* ── Shadows ── */
+    --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-card-hover: 0 4px 8px -2px rgb(0 0 0 / 0.4);
+    --shadow-elevated: 0 10px 20px -4px rgb(0 0 0 / 0.5);
+    --shadow-modal: 0 20px 30px -8px rgb(0 0 0 / 0.6);
+    --shadow-button: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-button-hover: 0 4px 10px 0 rgb(0 0 0 / 0.4);
+    --shadow-glow: 0 0 24px -4px hsl(175 84% 38% / 0.2);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.2);
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.35);
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    background: hsl(var(--accent) / 0.25);
+  }
+
+  /* ── Focus ring ── */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring) / 0.5);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* ── Noise texture overlay ── */
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.015'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
+    pointer-events: none;
+  }
+
+  /* ── Radial lighting overlay ── */
+  .bg-radial-light {
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      hsl(var(--primary) / 0.04) 0%,
+      transparent 70%
+    );
+  }
+
+  .dark .bg-radial-light {
+    background: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      hsl(var(--primary) / 0.06) 0%,
+      transparent 70%
+    );
+  }
+
+  /* ── Accent gradient text ── */
+  .text-gradient {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--accent-gradient-from)),
+      hsl(var(--accent-gradient-via)),
+      hsl(var(--accent-gradient-to))
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ── Accent gradient backgrounds ── */
+  .bg-gradient-accent {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--accent-gradient-from)),
+      hsl(var(--accent-gradient-via)),
+      hsl(var(--accent-gradient-to))
+    );
+  }
+
+  .bg-gradient-accent-subtle {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--accent-gradient-from) / 0.12),
+      hsl(var(--accent-gradient-via) / 0.08),
+      hsl(var(--accent-gradient-to) / 0.06)
+    );
+  }
+
+  /* ── Surface layers ── */
+  .surface-0 { background: hsl(var(--surface-0)); }
+  .surface-1 { background: hsl(var(--surface-1)); }
+  .surface-2 { background: hsl(var(--surface-2)); }
+  .surface-3 { background: hsl(var(--surface-3)); }
+  .surface-4 { background: hsl(var(--surface-4)); }
+
+  /* ── Card shadows ── */
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-card-hover { box-shadow: var(--shadow-card-hover); }
+  .shadow-elevated { box-shadow: var(--shadow-elevated); }
+  .shadow-modal { box-shadow: var(--shadow-modal); }
+
+  /* ── Shimmer animation ── */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 25%,
+      hsl(var(--muted-foreground) / 0.08) 50%,
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+}
