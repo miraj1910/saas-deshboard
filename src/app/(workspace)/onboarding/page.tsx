@@ -1,8 +1,10 @@
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import { OnboardingRecovery } from './recovery-ui'
 
 export default async function OnboardingPage() {
   const session = await auth()
+
   console.log('[ONBOARDING] session:', JSON.stringify({
     exists: !!session,
     id: session?.user?.id,
@@ -20,7 +22,5 @@ export default async function OnboardingPage() {
     redirect(`/${session.user.workspaceSlug}/dashboard`)
   }
 
-  // Authenticated but no workspace — show a fallback page instead of looping
-  console.log('[ONBOARDING] Authenticated but no workspaceSlug — should not happen if signIn callback creates workspace')
-  redirect('/login?error=NoWorkspace')
+  return <OnboardingRecovery email={session.user.email ?? ''} />
 }

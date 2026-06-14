@@ -3,13 +3,34 @@ import { isPublic, extractSlug } from '@/lib/auth.config'
 import { checkRateLimit } from '@/lib/rate-limiter'
 import { NextResponse } from 'next/server'
 
+const LOOP_PROTECTION_COOKIE = 'x-mw-loop-protection'
+
+function getCookie(name: string, cookieHeader: string | null): string | null {
+  if (!cookieHeader) return null
+  for (const part of cookieHeader.split(';')) {
+    const trimmed = part.trim()
+    if (trimmed.startsWith(name + '=')) {
+      return trimmed.slice(name.length + 1)
+    }
+  }
+  return null
+}
+
 export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl
   const { auth: session } = req
   const hostname = req.headers.get('host') ?? ''
   const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? '127.0.0.1'
+  const cookies = req.headers.get('cookie')
 
   console.log('[MW] pathname:', pathname, 'hasSession:', !!session, 'session.user:', session ? JSON.stringify({ id: session.user?.id, workspaceSlug: session.user?.workspaceSlug, onboardingComplete: session.user?.onboardingComplete }) : 'null')
+
+  // ---- Loop protection ----
+  const redirectTarget = getCookie(LOOP_PROTECTION_COOKIE, cookies)
+  const isLoop = redirectTarget === pathname
+  if (isLoop) {
+    console.log('[MW] Loop detected for pathname:', pathname, '- allowing request through')
+  }
 
   // Rate limiting on auth routes
   if (pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/register') || pathname.startsWith('/api/auth')) {
@@ -39,8 +60,18 @@ export default auth((req) => {
   // Public routes — no auth needed, but redirect authenticated users away from landing/auth pages
   if (isPublic(pathname)) {
     if (session && ['/', '/login', '/signup', '/register'].includes(pathname)) {
-      console.log('[MW] Authenticated on public page, redirecting to /onboarding')
-      return NextResponse.redirect(new URL('/onboarding', req.url))
+      if (session.user.onboardingComplete && session.user.workspaceSlug) {
+        console.log('[MW] Authenticated + onboarded on public page, redirecting to dashboard:', session.user.workspaceSlug)
+        return NextResponse.redirect(new URL(`/${session.user.workspaceSlug}/dashboard`, req.url))
+      }
+      if (!isLoop) {
+        console.log('[MW] Authenticated on public page, redirecting to /onboarding')
+        const res = NextResponse.redirect(new URL('/onboarding', req.url))
+        res.cookies.set(LOOP_PROTECTION_COOKIE, '/onboarding', { maxAge: 30, path: '/' })
+        return res
+      }
+      console.log('[MW] Loop bypass on public page, allowing request through')
+      return NextResponse.next()
     }
     return NextResponse.next()
   }
@@ -52,14 +83,27 @@ export default auth((req) => {
     return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url))
   }
 
-  // Onboarding check
-  if (!session.user.onboardingComplete && pathname !== '/onboarding') {
-    console.log('[MW] onboardingComplete false, redirecting to /onboarding')
-    return NextResponse.redirect(new URL('/onboarding', req.url))
+  // Onboarding check — workspace route slug resolution
+  const slug = extractSlug(pathname)
+
+  // If onboarding is not complete, redirect to onboarding (unless loop detected or already there)
+  if (!session.user.onboardingComplete) {
+    if (pathname !== '/onboarding' && !isLoop) {
+      console.log('[MW] onboardingComplete false, redirecting to /onboarding')
+      const res = NextResponse.redirect(new URL('/onboarding', req.url))
+      res.cookies.set(LOOP_PROTECTION_COOKIE, '/onboarding', { maxAge: 30, path: '/' })
+      return res
+    }
+    // Already on /onboarding or loop detected — let it render
+    console.log('[MW] onboardingComplete false but allowing request through (pathname:', pathname, ')')
+    const requestHeaders = new Headers(req.headers)
+    if (slug) {
+      requestHeaders.set('X-Workspace-Slug', slug)
+    }
+    return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
-  // Workspace route resolution
-  const slug = extractSlug(pathname)
+  // Onboarding is complete — handle workspace routing
   if (slug) {
     if (session.user.workspaceSlug && session.user.workspaceSlug !== slug) {
       console.log('[MW] Workspace slug mismatch, redirecting to', `/${session.user.workspaceSlug}/dashboard`)
@@ -69,6 +113,17 @@ export default auth((req) => {
     const requestHeaders = new Headers(req.headers)
     requestHeaders.set('X-Workspace-Slug', slug)
     return NextResponse.next({ request: { headers: requestHeaders } })
+  }
+
+  // Onboarding complete but session missing workspaceSlug — redirect to onboarding recovery
+  if (!session.user.workspaceSlug) {
+    if (!isLoop) {
+      console.log('[MW] Onboarding complete but no workspaceSlug, redirecting to /onboarding')
+      const res = NextResponse.redirect(new URL('/onboarding', req.url))
+      res.cookies.set(LOOP_PROTECTION_COOKIE, '/onboarding', { maxAge: 30, path: '/' })
+      return res
+    }
+    console.log('[MW] Loop bypass for missing workspaceSlug, allowing request through')
   }
 
   return NextResponse.next()
