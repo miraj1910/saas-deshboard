@@ -79,6 +79,7 @@ export const config = {
         })
 
         if (!membership) {
+          console.log('[AUTH:signIn] Creating workspace for userId:', userId)
           const raw = (user.name ?? 'workspace').toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').slice(0, 50).replace(/^-|-$/g, '') || 'workspace'
           const suffix = Math.random().toString(36).slice(2, 6)
 
@@ -102,34 +103,49 @@ export const config = {
               members: { create: { userId, role: 'OWNER' } },
             },
           })
+          console.log('[AUTH:signIn] Workspace created for userId:', userId)
+        } else {
+          console.log('[AUTH:signIn] Existing membership found for userId:', userId)
         }
       }
       return true
     },
     async jwt({ token, user, trigger }) {
+      // On sign-in: populate token from DB user and create session fields
       if (user) {
         token.sub = user.id
-        token.userType = user.userType
+        if (user.userType) token.userType = user.userType
 
-        const { prisma } = await import('@/lib/prisma')
+        try {
+          const { prisma } = await import('@/lib/prisma')
+          const membership = await prisma.workspaceMember.findFirst({
+            where: { userId: user.id },
+            include: { workspace: { select: { slug: true } } },
+          })
+          token.workspaceSlug = membership?.workspace.slug ?? null
+          token.onboardingComplete = !!membership
+        } catch (e) {
+          console.error('[AUTH:jwt] Membership query failed on sign-in:', e)
+          token.workspaceSlug = null
+          token.onboardingComplete = false
+        }
 
-        const membership = await prisma.workspaceMember.findFirst({
-          where: { userId: user.id },
-          include: { workspace: { select: { slug: true } } },
-        })
-        token.workspaceSlug = membership?.workspace.slug ?? null
-        token.onboardingComplete = !!membership
+        console.log('[AUTH:jwt] Token after sign-in:', JSON.stringify({ sub: token.sub, workspaceSlug: token.workspaceSlug, onboardingComplete: token.onboardingComplete, userType: token.userType }))
       }
 
+      // On trigger update: re-fetch membership
       if (trigger === 'update' && token.sub) {
-        const { prisma } = await import('@/lib/prisma')
-
-        const membership = await prisma.workspaceMember.findFirst({
-          where: { userId: token.sub },
-          include: { workspace: { select: { slug: true } } },
-        })
-        token.workspaceSlug = membership?.workspace.slug ?? null
-        token.onboardingComplete = !!membership
+        try {
+          const { prisma } = await import('@/lib/prisma')
+          const membership = await prisma.workspaceMember.findFirst({
+            where: { userId: token.sub },
+            include: { workspace: { select: { slug: true } } },
+          })
+          token.workspaceSlug = membership?.workspace.slug ?? null
+          token.onboardingComplete = !!membership
+        } catch (e) {
+          console.error('[AUTH:jwt] Membership query failed on update:', e)
+        }
       }
 
       return token
@@ -139,6 +155,7 @@ export const config = {
       session.user.userType = token.userType
       session.user.workspaceSlug = token.workspaceSlug
       session.user.onboardingComplete = token.onboardingComplete
+      console.log('[AUTH:session] Session built:', JSON.stringify({ id: session.user.id, workspaceSlug: session.user.workspaceSlug, onboardingComplete: session.user.onboardingComplete }))
       return session
     },
   },
