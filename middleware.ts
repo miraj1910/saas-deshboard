@@ -1,9 +1,18 @@
-import { auth } from '@/lib/auth'
-import { isPublic, extractSlug } from '@/lib/auth.config'
+import NextAuth from 'next-auth'
+import { config } from '@/lib/auth.config'
 import { checkRateLimit } from '@/lib/rate-limiter'
 import { NextResponse } from 'next/server'
 
+const { auth } = NextAuth(config)
+
 const LOOP_PROTECTION_COOKIE = 'x-mw-loop-protection'
+
+// Known non-workspace route prefixes — slug extraction skips these
+const NON_WORKSPACE_ROUTES = new Set([
+  'onboarding', 'login', 'signup', 'register',
+  'forgot-password', 'reset-password', 'pricing',
+  'invite', 'portal', 'api',
+])
 
 function getCookie(name: string, cookieHeader: string | null): string | null {
   if (!cookieHeader) return null
@@ -14,6 +23,17 @@ function getCookie(name: string, cookieHeader: string | null): string | null {
     }
   }
   return null
+}
+
+function extractSlug(pathname: string): string | null {
+  const match = pathname.match(/^\/([^/]+)(?:\/|$)/)
+  if (!match) return null
+  const slug = match[1]
+  // Skip known non-workspace routes
+  if (NON_WORKSPACE_ROUTES.has(slug)) return null
+  // Skip if it looks like a Next.js internal path or has a dot (file extension)
+  if (slug.startsWith('_') || slug.includes('.')) return null
+  return slug
 }
 
 export default auth((req) => {
@@ -115,8 +135,9 @@ export default auth((req) => {
     return NextResponse.next({ request: { headers: requestHeaders } })
   }
 
-  // Onboarding complete but session missing workspaceSlug — redirect to onboarding recovery
+  // Onboarding complete but no path slug — check session for workspaceSlug
   if (!session.user.workspaceSlug) {
+    // Session says onboarding is complete but has no workspaceSlug — redirect to onboarding recovery
     if (!isLoop) {
       console.log('[MW] Onboarding complete but no workspaceSlug, redirecting to /onboarding')
       const res = NextResponse.redirect(new URL('/onboarding', req.url))
@@ -133,4 +154,13 @@ export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
   ],
+}
+
+function isPublic(pathname: string): boolean {
+  const pages = config.pages as { signIn?: string } | undefined
+  const publicPaths = [
+    '/', '/pricing', '/login', '/register', '/signup',
+    '/forgot-password', '/reset-password', '/invite', '/api/auth',
+  ]
+  return publicPaths.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }

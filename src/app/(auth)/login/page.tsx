@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { LoginForm } from './login-form'
 
 export default function LoginPage() {
@@ -10,7 +11,9 @@ export default function LoginPage() {
         <h1 className="text-xl font-semibold tracking-tight">Sign in to FlowDesk</h1>
         <p className="text-sm text-muted-foreground">Enter your credentials to continue</p>
       </div>
-      <LoginForm />
+      <Suspense fallback={<div className="h-[300px] animate-pulse rounded-lg bg-muted/50" />}>
+        <LoginForm />
+      </Suspense>
       <p className="text-center text-xs text-muted-foreground">
         Don&apos;t have an account?{' '}
         <a href="/signup" className="font-medium text-foreground underline underline-offset-4 hover:text-teal-600">

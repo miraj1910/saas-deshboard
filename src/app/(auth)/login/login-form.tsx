@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
@@ -10,8 +10,15 @@ import { Label } from '@/components/ui/label'
 
 export function LoginForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Use callbackUrl from query params, fall back to /onboarding
+  // Middleware will redirect /onboarding → /[workspaceSlug]/dashboard if already onboarded
+  const callbackUrl = useCallback(() => {
+    return searchParams.get('callbackUrl') || '/onboarding'
+  }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -27,7 +34,7 @@ export function LoginForm() {
       const result = await loginAction(email, password)
 
       if (result.success) {
-        window.location.href = '/onboarding'
+        window.location.href = callbackUrl()
       } else {
         setError(result.error ?? 'Invalid email or password')
       }
@@ -92,7 +99,7 @@ export function LoginForm() {
         type="button"
         variant="outline"
         className="w-full"
-        onClick={() => signIn('google', { redirectTo: '/onboarding' })}
+        onClick={() => signIn('google', { redirectTo: callbackUrl() })}
       >
         <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
           <path
