@@ -3,7 +3,22 @@ import { withSentryConfig } from '@sentry/nextjs'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['pino', 'pino-pretty'],
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'utfs.io',
+      },
+      {
+        protocol: 'https',
+        hostname: 'uploadthing.com',
+      },
+    ],
+  },
 }
 
 export default withSentryConfig(nextConfig, {

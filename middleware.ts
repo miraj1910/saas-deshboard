@@ -47,7 +47,7 @@ export default auth((req) => {
   const { pathname, searchParams } = req.nextUrl
   const { auth: session } = req
   const hostname = req.headers.get('host') ?? ''
-  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? '127.0.0.1'
+  const ip = req.headers.get('x-forwarded-for') ?? req.headers.get('x-real-ip') ?? '0.0.0.0'
   const cookies = req.headers.get('cookie')
 
   console.log('[MW] pathname:', pathname, 'hasSession:', !!session, 'session.user:', session ? JSON.stringify({ id: session.user?.id, workspaceSlug: session.user?.workspaceSlug, onboardingComplete: session.user?.onboardingComplete }) : 'null')

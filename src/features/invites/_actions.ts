@@ -6,6 +6,7 @@ import { createWorkspaceContext } from '@/lib/authorization'
 import { Permissions, AuthorizationError } from '@/lib/rbac'
 import { checkPlanTeamLimit } from '@/lib/stripe/plans'
 import { sendInviteEmail } from '@/lib/email'
+import { config } from '@/lib/config'
 import { listPendingInvites } from '@/features/invites/queries'
 import { WorkspaceRole } from '@prisma/client'
 import type { InviteWithRelations } from '@/features/invites/queries'
@@ -97,7 +98,7 @@ export async function createInvite(
       email,
       inviterName: inviter?.name ?? 'A team member',
       workspaceName: workspace?.name ?? '',
-      inviteUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'http://localhost:3000'}/invite?token=${token}`,
+      inviteUrl: `${config.appUrl}/invite?token=${token}`,
       role: role.toLowerCase().replace('_', ' '),
     }).catch(() => {})
 

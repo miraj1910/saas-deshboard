@@ -11,12 +11,35 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://saas-dashboard.vercel.app'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: {
     default: 'FlowDesk',
     template: '%s | FlowDesk',
   },
   description: 'Operations platform for independent knowledge workers.',
+  openGraph: {
+    title: 'FlowDesk',
+    description: 'Operations platform for independent knowledge workers.',
+    url: '/',
+    siteName: 'FlowDesk',
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'FlowDesk',
+    description: 'Operations platform for independent knowledge workers.',
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  icons: {
+    icon: '/favicon.ico',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

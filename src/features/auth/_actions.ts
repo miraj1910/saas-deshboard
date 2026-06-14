@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { signIn } from '@/lib/auth'
 import { sendWelcomeEmail } from '@/lib/email'
+import { config } from '@/lib/config'
 
 function slugify(name: string): string {
   let slug = name
@@ -99,7 +100,7 @@ export async function registerAction(name: string, email: string, password: stri
     email: user.email,
     name: user.name ?? 'User',
     workspaceName: workspace.name,
-    loginUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'http://localhost:3000'}/login`,
+    loginUrl: `${config.appUrl}/login`,
   }).catch(() => {})
 
   try {

@@ -6,6 +6,7 @@ import { Permissions, AuthorizationError } from '@/lib/rbac'
 import { WorkspaceRole } from '@prisma/client'
 import { createNotification } from '@/lib/notifications'
 import { sendProjectUpdateEmail } from '@/lib/email'
+import { config } from '@/lib/config'
 import {
   createProjectSchema,
   updateProjectSchema,
@@ -157,7 +158,7 @@ export async function updateProject(
           projectName: parsed.name ?? project.name,
           clientName: client.name,
           status: 'Completed',
-          projectUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'http://localhost:3000'}/portal/projects/${projectId}`,
+          projectUrl: `${config.appUrl}/portal/projects/${projectId}`,
           workspaceName: workspace?.name ?? '',
         }).catch(() => {})
       }

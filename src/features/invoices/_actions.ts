@@ -5,6 +5,7 @@ import { createWorkspaceContext } from '@/lib/authorization'
 import { Permissions, AuthorizationError } from '@/lib/rbac'
 import { createNotification } from '@/lib/notifications'
 import { sendInvoiceSentEmail } from '@/lib/email'
+import { config } from '@/lib/config'
 import {
   createInvoiceSchema,
   sendInvoiceSchema,
@@ -249,7 +250,7 @@ export async function sendInvoice(
         invoiceNumber: updated.invoiceNumber,
         totalAmount: `$${Number(updated.totalAmount).toFixed(2)}`,
         dueDate: new Intl.DateTimeFormat('en-US', { dateStyle: 'long' }).format(new Date(updated.dueDate)),
-        invoiceUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'http://localhost:3000'}/portal/invoices`,
+        invoiceUrl: `${config.appUrl}/portal/invoices`,
         workspaceName: workspace?.name ?? '',
       }).catch(() => {})
     }

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { config } from '@/lib/config'
 
 export async function requestPasswordResetAction(email: string) {
   const user = await prisma.user.findUnique({ where: { email } })
@@ -18,7 +19,7 @@ export async function requestPasswordResetAction(email: string) {
     data: { email, token, expiresAt },
   })
 
-  const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? 'http://localhost:3000'}/reset-password?token=${token}`
+  const resetUrl = `${config.appUrl}/reset-password?token=${token}`
 
   sendPasswordResetEmail({
     email,

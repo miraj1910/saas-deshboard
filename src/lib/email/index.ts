@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { config } from '@/lib/config'
 import type {
   SendEmailOptions,
   WelcomeEmailData,
@@ -14,7 +15,7 @@ import { renderProjectUpdateEmail } from './templates/project-update'
 import { renderPasswordResetEmail } from './templates/password-reset'
 
 function getFromAddress(): string {
-  return process.env.EMAIL_FROM ?? 'FlowDesk <noreply@flowdesk.app>'
+  return config.emailFrom
 }
 
 function getResendClient(): Resend {

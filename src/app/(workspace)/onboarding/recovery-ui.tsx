@@ -93,7 +93,7 @@ export function OnboardingRecovery({ email }: { email: string }) {
           <p>
             If the problem persists, please{' '}
             <a
-              href="mailto:support@flowdesk.com"
+              href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? 'support@flowdesk.com'}`}
               className="font-medium text-foreground underline underline-offset-4 hover:text-teal-600"
             >
               contact support
