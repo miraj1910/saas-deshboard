@@ -14,6 +14,19 @@ export function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const urlError = searchParams.get('error')
+  const errorMessage = urlError === 'Configuration'
+    ? 'There is a problem with the server configuration. Please contact support.'
+    : urlError === 'AccessDenied'
+      ? 'Access denied. You do not have permission to sign in.'
+      : urlError === 'AccountDisabled'
+        ? 'This account has been disabled.'
+        : urlError === 'ClientLoginRestricted'
+          ? 'Client accounts cannot sign in from this page.'
+          : urlError
+            ? `Authentication error: ${urlError}`
+            : null
+
   // Use callbackUrl from query params, fall back to /onboarding
   // Middleware will redirect /onboarding → /[workspaceSlug]/dashboard if already onboarded
   const callbackUrl = useCallback(() => {
@@ -75,9 +88,9 @@ export function LoginForm() {
         />
       </div>
 
-      {error && (
+      {(error || errorMessage) && (
         <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert" aria-live="polite">
-          {error}
+          {error || errorMessage}
         </div>
       )}
 
