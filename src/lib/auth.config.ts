@@ -5,6 +5,32 @@ import { logger } from '@/lib/logger'
 
 const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
 
+function normalizeAuthUrl(name: 'AUTH_URL' | 'NEXTAUTH_URL') {
+  const raw = process.env[name]
+  if (!raw) return
+
+  try {
+    const parsed = new URL(raw)
+    const normalized = parsed.origin
+
+    if (raw !== normalized) {
+      process.env[name] = normalized
+      logger.warn(`[AUTH:config] ${name} must not include a path. Normalized value for Auth.js.`, {
+        configured: raw,
+        normalized,
+      })
+    }
+  } catch {
+    logger.error(`[AUTH:config] Invalid ${name}. Auth.js will fall back to the request host.`, {
+      configured: raw,
+    })
+    delete process.env[name]
+  }
+}
+
+normalizeAuthUrl('AUTH_URL')
+normalizeAuthUrl('NEXTAUTH_URL')
+
 if (process.env.NODE_ENV === 'production' && !authSecret) {
   logger.error('[AUTH:config] Missing AUTH_SECRET/NEXTAUTH_SECRET. Production auth routes will fail.')
 }
