@@ -3,6 +3,12 @@ import Credentials from 'next-auth/providers/credentials'
 import Google from 'next-auth/providers/google'
 import { logger } from '@/lib/logger'
 
+const authSecret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
+
+if (process.env.NODE_ENV === 'production' && !authSecret) {
+  logger.error('[AUTH:config] Missing AUTH_SECRET/NEXTAUTH_SECRET. Production auth routes will fail.')
+}
+
 const publicPages = [
   '/', '/pricing', '/login', '/register', '/signup',
   '/forgot-password', '/reset-password', '/invite', '/api/auth',
@@ -18,6 +24,7 @@ function extractSlug(pathname: string): string | null {
 }
 
 export const config = {
+  secret: authSecret,
   trustHost: true,
   pages: {
     signIn: '/login',
