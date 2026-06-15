@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { signIn } from 'next-auth/react'
+import { loginAction } from '@/features/auth/_actions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -43,7 +44,6 @@ export function LoginForm() {
     const password = form.get('password') as string
 
     try {
-      const { loginAction } = await import('@/features/auth/_actions')
       const result = await loginAction(email, password)
 
       if (result.success) {

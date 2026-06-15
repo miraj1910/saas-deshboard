@@ -24,12 +24,16 @@ export const config = {
     error: '/login',
   },
   providers: [
-    Google({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
-      authorization: { params: { prompt: 'consent', access_type: 'offline' } },
-    }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            allowDangerousEmailAccountLinking: true,
+            authorization: { params: { prompt: 'consent', access_type: 'offline' } },
+          }),
+        ]
+      : []),
     Credentials({
       async authorize(credentials) {
         const { prisma } = await import('@/lib/prisma')

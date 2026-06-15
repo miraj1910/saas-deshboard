@@ -11,7 +11,7 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://saas-dashboard.vercel.app'
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://saas-deshboard.vercel.app'
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
