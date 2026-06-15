@@ -52,17 +52,9 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
 
       - name: Prisma migrate (check only)
-        run: |
-          createdb -h localhost -U postgres flowdesk_shadow
-          npx prisma migrate diff \
-            --to-url "$DATABASE_URL" \
-            --from-migrations prisma/migrations \
-            --shadow-database-url "$SHADOW_DATABASE_URL" \
-            --exit-code
+        run: npx prisma migrate deploy
         env:
-          PGPASSWORD: postgres
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
-          SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_shadow
 
       - name: Type check
         run: npx tsc --noEmit
