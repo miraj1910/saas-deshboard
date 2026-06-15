@@ -87,6 +87,12 @@ export default auth((req) => {
   // Public routes — no auth needed, but redirect authenticated users away from landing/auth pages
   if (isPublic(pathname)) {
     if (session && ['/', '/login', '/signup', '/register'].includes(pathname)) {
+      // If /login has ?error=NoWorkspace, the user was sent back from onboarding
+      // because the session wasn't ready yet. Allow the request through to break the loop.
+      if (pathname === '/login' && searchParams.get('error') === 'NoWorkspace') {
+        console.log('[MW] /login?error=NoWorkspace detected — bypassing redirect to break loop')
+        return NextResponse.next()
+      }
       if (session.user.onboardingComplete && session.user.workspaceSlug) {
         console.log('[MW] Authenticated + onboarded on public page, redirecting to dashboard:', session.user.workspaceSlug)
         return NextResponse.redirect(new URL(`/${session.user.workspaceSlug}/dashboard`, req.url))
@@ -94,7 +100,7 @@ export default auth((req) => {
       if (!isLoop) {
         console.log('[MW] Authenticated on public page, redirecting to /onboarding')
         const res = NextResponse.redirect(new URL('/onboarding', req.url))
-        res.cookies.set(LOOP_PROTECTION_COOKIE, '/onboarding', { maxAge: 30, path: '/' })
+        res.cookies.set(LOOP_PROTECTION_COOKIE, '/onboarding', { maxAge: 60, path: '/' })
         return res
       }
       console.log('[MW] Loop bypass on public page, allowing request through')

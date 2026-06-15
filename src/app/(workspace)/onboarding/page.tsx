@@ -13,8 +13,8 @@ export default async function OnboardingPage() {
   }))
 
   if (!session?.user?.id) {
-    console.log('[ONBOARDING] No session, redirecting to /login')
-    redirect('/login')
+    console.log('[ONBOARDING] No session, redirecting to /login?error=NoWorkspace')
+    redirect('/login?error=NoWorkspace')
   }
 
   if (session.user.workspaceSlug) {

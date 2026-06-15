@@ -28,10 +28,23 @@ export function LoginForm() {
             ? `Authentication error: ${urlError}`
             : null
 
-  // Use callbackUrl from query params, fall back to /onboarding
-  // Middleware will redirect /onboarding → /[workspaceSlug]/dashboard if already onboarded
+  // Validate callbackUrl — only allow relative paths or same-origin URLs
+  // Prevents open redirects and blocks invalid URLs from causing redirect cycles
   const callbackUrl = useCallback(() => {
-    return searchParams.get('callbackUrl') || '/onboarding'
+    const url = searchParams.get('callbackUrl')
+    if (!url) return '/onboarding'
+    // Allow relative paths (must start with /)
+    if (url.startsWith('/')) return url
+    // Allow same-origin absolute URLs
+    try {
+      const parsed = new URL(url, window.location.origin)
+      if (parsed.origin === window.location.origin) {
+        return parsed.pathname + parsed.search + parsed.hash
+      }
+    } catch {
+      // Not a valid URL
+    }
+    return '/onboarding'
   }, [searchParams])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
