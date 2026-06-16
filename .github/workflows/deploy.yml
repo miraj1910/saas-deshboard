@@ -32,7 +32,6 @@ jobs:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           AUTH_URL: ${{ secrets.AUTH_URL }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
-          DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           UPLOADTHING_APP_ID: ${{ secrets.UPLOADTHING_APP_ID }}
@@ -48,7 +47,6 @@ jobs:
             AUTH_SECRET
             AUTH_URL
             NEXT_PUBLIC_APP_URL
-            DOCKER_REGISTRY
           )
 
           missing=()
