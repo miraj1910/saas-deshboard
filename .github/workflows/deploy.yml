@@ -83,17 +83,19 @@ jobs:
         run: npx prisma generate
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
+          DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL}}
       - name: Prisma migrate (production)
         timeout-minutes: 5
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL }}
+           DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL}}
 
       - name: Build
         run: npm run build
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+           DIRECT_DATABASE_URL: ${{ secrets.DIRECT_DATABASE_URL}}
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           AUTH_URL: ${{ secrets.AUTH_URL }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
