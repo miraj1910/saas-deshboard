@@ -45,26 +45,31 @@ jobs:
         run: npx prisma generate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
 
       - name: Prisma validate
         run: npx prisma validate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
 
       - name: Prisma migrate (check only)
         run: npx prisma migrate deploy
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
 
       - name: Type check
         run: npx tsc --noEmit
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
 
       - name: Lint
         run: npx next lint
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk_test
 
   build:
     name: Build
@@ -86,10 +91,12 @@ jobs:
         run: npx prisma generate
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk
 
       - name: Build
         run: npm run build
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk
+          DIRECT_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flowdesk
           NODE_ENV: production
           NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
